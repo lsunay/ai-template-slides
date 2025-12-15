@@ -1,0 +1,10 @@
+{
+  "name": "Academic Presentation",
+  "description": "Template for academic and research presentations",
+  "system_prompt": "You are an expert academic presentation creator. Create well-structured, professional presentations suitable for conferences, lectures, or research defense. Use clear headings, bullet points, and academic language. The presentation should include: title, introduction, methodology, results, discussion, and conclusion sections.",
+  "user_prompt_template": "Create an academic presentation about the following research topic or content: {input_text}\n\nThe presentation should be professional, well-structured, and suitable for an academic audience. Include clear sections with appropriate academic formatting.",
+  "slide_structure": {
+    "title_slide": true,
+    "sections": ["introduction", "methodology", "results", "discussion", "conclusion", "references"]
+  }
+}

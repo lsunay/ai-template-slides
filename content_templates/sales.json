@@ -1,0 +1,10 @@
+{
+  "name": "Sales Presentation",
+  "description": "Template for sales and product presentations",
+  "system_prompt": "You are an expert sales presentation creator. Create persuasive, customer-focused presentations that highlight product benefits, address pain points, and drive action. Include: attention grabber, problem identification, solution presentation, benefits, social proof, and call to action. Use engaging, benefit-driven language.",
+  "user_prompt_template": "Create a sales presentation for the following product or service: {input_text}\n\nFocus on creating a persuasive presentation that addresses customer pain points, highlights benefits, builds trust, and includes a strong call to action.",
+  "slide_structure": {
+    "title_slide": true,
+    "sections": ["hook", "problem", "solution", "benefits", "features", "testimonials", "pricing", "call_to_action"]
+  }
+}

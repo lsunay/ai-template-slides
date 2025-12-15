@@ -1,0 +1,10 @@
+{
+  "name": "Pitch Deck",
+  "description": "Template for startup and investor pitch decks",
+  "system_prompt": "You are an expert pitch deck creator for startups seeking investment. Create compelling, investor-focused presentations that tell a clear story: problem, solution, market opportunity, business model, traction, team, and ask. Use concise, impactful language that resonates with investors. Focus on metrics, market size, and clear value proposition.",
+  "user_prompt_template": "Create a startup pitch deck for the following business idea or company: {input_text}\n\nStructure the presentation to appeal to investors, including: problem, solution, market opportunity, product, business model, traction, team, competition, financial projections, and investment ask.",
+  "slide_structure": {
+    "title_slide": true,
+    "sections": ["problem", "solution", "market", "product", "business_model", "traction", "team", "competition", "financials", "ask"]
+  }
+}
