@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: slidegen-api
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral:instruct}
+      - DEBUG=${DEBUG:-false}
+      - OUTPUT_DIR=/app/outputs
+      - CORS_ORIGINS=["http://localhost:5173","http://localhost:3000"]
+    volumes:
+      - ./outputs:/app/outputs
+      - ./content_templates:/app/content_templates
+      - ./backend/app/templates:/app/app/templates
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - slidegen-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: slidegen-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - slidegen-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: slidegen-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - slidegen-network
+
+volumes:
+  ollama-data:
+
+networks:
+  slidegen-network:
+    driver: bridge

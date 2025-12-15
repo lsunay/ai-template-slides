@@ -1,0 +1,16 @@
+name: pitch_deck
+display_name: "Pitch Deck"
+description: "Template for startup and investor pitch decks"
+slide_masters:
+  - title_slide
+  - section_header
+  - bullet_slide
+placeholders:
+  - name: title
+    shape_id: 0
+  - name: content
+    shape_id: 1
+styles:
+  font: Calibri
+  primary_color: "#FF6B35"
+  background_color: "#FFFFFF"

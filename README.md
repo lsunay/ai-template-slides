@@ -1,124 +1,143 @@
 # AI Template Slides 🤖📊
 
-Generate professional PowerPoint presentations using AI. Transform your text content into beautifully structured slides with multiple AI model support.
+Transform your text content into professional PowerPoint presentations using AI. Upload any text (article, report, blog, bullet list) and get beautifully structured slides in seconds.
 
-## 🚀 Features
+## 🎯 New Target (Summary)
 
-### CLI Tool (`kimi-cli`)
-- **Multiple AI Models**: OpenAI GPT, Ollama (local), LM Studio (local)
-- **Smart Templates**: Academic, Pitch Deck, Sales presentations
-- **Flexible Input**: Read from files or stdin
-- **Multiple Output Formats**: PPTX files or base64 stdout
-- **Rich CLI Interface**: Progress indicators and colored output
+Users provide ready-made text content (article, report, blog, bullet list...). The system splits this text into predefined "content templates":
+- **Academic** → Introduction, Method, Findings, Conclusion...
+- **Pitch Deck** → Problem, Solution, Market, Business Model...
+- **Sales Presentation** → Customer Pain, Product, ROI, References...
 
-### Backend API
-- **FastAPI** powered REST API
-- **Docker** support for easy deployment
-- **Frontend** React application (in development)
+The splitting is done by high-capacity remote models (OpenAI / Claude / Gemini); local models are optional (not mandatory). The resulting `{titles:[], bullets:[[]]}` object is placed into ready .pptx template files using python-pptx. Output: downloadable .pptx + browser preview.
 
-## 📦 Installation
+## 📁 Folder & Data Structure (GitHub Repository)
 
-### Prerequisites
-- Python 3.11+
-- Node.js 18+ (for frontend)
-- Docker & Docker Compose (optional)
-
-### CLI Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/lsunay/ai-template-slides.git
-cd ai-template-slides
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install CLI package
-pip install -e .
+```
+ai-template-slides/
+├─ backend/
+│  ├─ app/
+│  │  ├─ api/               – FastAPI routes
+│  │  ├─ core/              – config, logging
+│  │  ├─ services/
+│  │  │  ├─ parser.py       – parse text to template (remote model)
+│  │  │  ├─ renderer.py     – create pptx with python-pptx
+│  │  │  └─ ollama_stub.py  – local model option experiments
+│  │  ├─ templates/          – each: .pptx + meta.yaml
+│  │  │  ├─ academic/
+│  │  │  ├─ pitch_deck/
+│  │  │  ├─ sales/
+│  │  │  └─ …
+│  │  └─ main.py
+│  ├─ requirements.txt
+│  └─ Dockerfile
+├─ frontend/
+│  ├─ src/
+│  │  ├─ components/UploadText.vue
+│  │  ├─ components/Preview.vue
+│  │  └─ api.ts
+│  ├─ package.json
+│  └─ vite.config.ts
+├─ content_templates/        – JSON schemas (for external model prompts)
+│  ├─ academic.json
+│  ├─ pitch_deck.json
+│  └─ sales.json
+├─ docs/                     – example inputs, API documentation
+└─ slidegen/                 – CLI package (optional)
 ```
 
-### Backend Installation
+## 📋 What is a "Content Template"?
 
-```bash
-# Install backend dependencies
-cd backend
-pip install -r requirements.txt
-
-# Or using Docker
-docker-compose up -d
+Each folder's meta.yaml contains these fields:
+```yaml
+name: academic
+slide_masters:
+  - title_slide
+  - section_header
+  - bullet_slide
+placeholders:
+  - name: title
+    shape_id: 0          # slide.shapes[0] in python-pptx
+  - name: content
+    shape_id: 1
+styles:
+  font: Calibri
+  primary_color: "#003366"
 ```
 
-### Frontend Installation
-
-```bash
-cd frontend
-npm install
-npm run dev
+`content_templates/academic.json` is the prompt template sent to the external model:
+```json
+{
+  "role": "system",
+  "content": "You are a slide outline extractor. The user will paste an academic paper excerpt. Return ONLY JSON:\n{\n  \"titles\": [\"Introduction\",\"Methodology\",\"Results\",\"Conclusion\"],\n  \"bullets\": [\n      [\"bullet-1\",\"bullet-2\"],\n      [\"bullet-1\",\"bullet-2\"],\n      …\n  ]\n}\nEach bullet max 15 words."
+}
 ```
 
-## 🎯 Usage
+When user text arrives, the backend:
+1. Reads content_templates/academic.json → creates prompt
+2. If OPENAI_API_KEY env var exists, POST to OpenAI
+3. If not, tries local model via ollama_stub.py
+4. Validates returned JSON (Pydantic model)
+5. Clones templates/academic/template.pptx file; inserts titles[i] and bullets[i] into each slide
+6. Saves → provides download link to user
 
-### CLI Usage
+## 🚀 Example Usage Flow
 
-#### Basic Commands
-```bash
-# Show help
-kimi-cli --help
+**User in UI:**
+- Pastes 500-2000 word report into text area
+- Selects "Academic" from dropdown
+- Clicks [Generate] button
 
-# List available models
-kimi-cli models
-
-# List available templates
-kimi-cli templates
+**Frontend POST /api/generate**
+```json
+{
+  "text": "...",
+  "template": "academic",
+  "model": "openai"
+}
 ```
 
-#### Generate Presentations
+**Backend:**
+- Compiles prompt, gets JSON from remote model
+- renderer.py → clones template.pptx + inserts content
+- Writes output.pptx as /<uuid>.pptx on server
 
-```bash
-# From file with OpenAI
-kimi-cli generate \
-  --input content.txt \
-  --template academic \
-  --model openai \
-  --api-key YOUR_API_KEY \
-  --output presentation.pptx
+**Frontend:**
+- Gets /{uuid}.pptx link
+- Download button becomes active
+- Shows preview via https://view.officeapps.live.com/… iframe
 
-# From stdin with Ollama (local)
-echo "My presentation content" | kimi-cli generate \
-  --template pitch_deck \
-  --model ollama \
-  --output startup_pitch.pptx
+## 🔧 Local Model Option (Optional)
 
-# Output to stdout as base64
-kimi-cli generate \
-  --input content.txt \
-  --template sales \
-  --model lmstudio \
-  --output -
+Pull Ollama with mistral:instruct or llama3:8b.
+In ollama_stub.py:
+```python
+import httpx
+async def generate_outline(prompt: str) -> dict:
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{settings.OLLAMA_HOST}/api/generate",
+            json={"model": "mistral:instruct",
+                  "prompt": prompt,
+                  "format": "json",
+                  "stream": False}
+        )
+    return r.json()
 ```
 
-#### CLI Options
-- `--input, -i`: Input file path (use `-` for stdin)
-- `--template, -t`: Template name (academic, pitch_deck, sales)
-- `--model, -m`: AI model (openai, ollama, lmstudio)
-- `--api-key`: API key for OpenAI
-- `--base-url`: Custom base URL for local models
-- `--output, -o`: Output file path (use `-` for base64 stdout)
-- `--verbose, -v`: Enable verbose output
+Validate with same Pydantic model; if error rate is high, fall back to "remote model".
 
-### Backend API Usage
+## ✅ Quick MVP Checklist
 
-```bash
-# Start the backend
-cd backend
-uvicorn app.main:app --reload
+- [x] 3 ready .pptx templates (academic, pitch, sales)
+- [x] 3 content_templates/*.json prompt templates
+- [x] FastAPI /generate + /health endpoints
+- [x] Single page React structure: UploadText → Preview → Download
+- [x] .env.example (OpenAI key, Ollama host, LM Studio host)
+- [x] Docker-compose: app, ollama (optional)
+- [x] README with example curl, screenshot, local setup
 
-# API will be available at http://localhost:8000
-# API docs at http://localhost:8000/docs
-```
-
-### Docker Usage
+## 🐳 Docker Support
 
 ```bash
 # Full stack with Docker Compose
@@ -128,88 +147,63 @@ docker-compose up -d
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
-## 🏗️ Architecture
+The API will be available at `http://localhost:8000` and frontend at `http://localhost:5173`.
 
-```
-ai-template-slides/
-├── kimi_cli/                 # CLI Package
-│   ├── __init__.py
-│   ├── main.py              # Typer CLI application
-│   ├── parser.py            # AI model clients
-│   └── renderer.py          # PowerPoint generation
-├── content_templates/       # Presentation templates
-│   ├── academic.json
-│   ├── pitch_deck.json
-│   └── sales.json
-├── backend/                 # FastAPI backend
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── services/
-│   │   └── templates/
-│   └── requirements.txt
-├── frontend/               # React frontend
-│   ├── src/
-│   │   ├── components/
-│   │   └── pages/
-│   ├── package.json
-│   └── vite.config.ts
-├── pyproject.toml          # CLI package configuration
-└── docker-compose.yml
-```
+## 🛠️ Local Development
 
-## 🔧 Configuration
-
-### Environment Variables
-
+### Backend Setup
 ```bash
-# For OpenAI
-export OPENAI_API_KEY="your-api-key"
-
-# For custom endpoints
-export OLLAMA_BASE_URL="http://localhost:11434"
-export LMSTUDIO_BASE_URL="http://localhost:1234/v1"
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
-### Custom Templates
-
-Create JSON files in `content_templates/` directory:
-
-```json
-{
-  "name": "My Template",
-  "description": "Custom template description",
-  "system_prompt": "You are a presentation creator...",
-  "user_prompt_template": "Create a presentation about: {input_text}"
-}
-```
-
-## 🛠️ Development
-
-### Setup Development Environment
-
+### Frontend Setup
 ```bash
-# Install development dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Code formatting
-black kimi_cli/
-isort kimi_cli/
-
-# Type checking
-mypy kimi_cli/
+cd frontend
+npm install
+npm run dev
 ```
 
-### Project Structure
+### CLI Setup (Optional)
+```bash
+pip install -e .
+slidegen --help
+```
 
-- **CLI Package**: `kimi_cli/` - Standalone CLI tool
-- **Backend**: `backend/` - FastAPI REST API
-- **Frontend**: `frontend/` - React web interface
-- **Templates**: `content_templates/` - JSON template files
+## 📦 Installation
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+ (for frontend)
+- Docker & Docker Compose (optional)
+
+### Quick Start
+```bash
+git clone https://github.com/lsunay/ai-template-slides.git
+cd ai-template-slides
+
+# Copy environment variables
+cp .env.example .env
+# Edit .env with your API keys
+
+# Run with Docker (recommended)
+docker-compose up -d
+
+# Or run locally
+cd backend && uvicorn app.main:app --reload
+cd frontend && npm run dev
+```
+
+## 🎯 API Endpoints
+
+- `POST /api/generate` - Generate presentation from text
+- `GET /api/download/{id}` - Download generated presentation
+- `GET /api/health` - Health check
+- `GET /api/templates` - List available templates
+- `GET /api/models` - List available AI models
 
 ## 🤝 Contributing
 
@@ -223,17 +217,6 @@ mypy kimi_cli/
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- [Typer](https://typer.tiangolo.com/) - For the amazing CLI framework
-- [python-pptx](https://python-pptx.readthedocs.io/) - For PowerPoint generation
-- [FastAPI](https://fastapi.tiangolo.com/) - For the backend API
-- [Pydantic](https://pydantic-docs.helpmanual.io/) - For data validation
-
-## 📞 Support
-
-For support, please open an issue in the GitHub repository or contact the development team.
-
 ---
 
-**Happy Presenting!** 🎉
+**%99 vibe coded with KimiK2** 🤖

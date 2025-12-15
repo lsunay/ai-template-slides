@@ -3,16 +3,16 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "kimi-cli"
+name = "slidegen"
 version = "0.1.0"
 description = "AI-powered PowerPoint presentation generator"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
-    {name = "Kimi CLI Team", email = "team@kimi-cli.dev"}
+    {name = "SlideGen Team", email = "team@slidegen.dev"}
 ]
-keywords = ["ai", "powerpoint", "presentation", "cli", "typer"]
+keywords = ["ai", "powerpoint", "presentation", "cli", "typer", "fastapi"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -51,15 +51,15 @@ Repository = "https://github.com/lsunay/ai-template-slides"
 Issues = "https://github.com/lsunay/ai-template-slides/issues"
 
 [project.scripts]
-kimi-cli = "kimi_cli.main:app"
+slidegen = "slidegen.main:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["kimi_cli*"]
+include = ["slidegen*"]
 exclude = ["tests*"]
 
 [tool.setuptools.package-data]
-kimi_cli = ["py.typed"]
+slidegen = ["py.typed"]
 
 [tool.black]
 line-length = 88
@@ -90,4 +90,4 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=kimi_cli --cov-report=term-missing --cov-report=html"
+addopts = "--cov=slidegen --cov-report=term-missing --cov-report=html"

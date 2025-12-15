@@ -1,0 +1,16 @@
+name: sales
+display_name: "Sales Presentation"
+description: "Template for sales and product presentations"
+slide_masters:
+  - title_slide
+  - section_header
+  - bullet_slide
+placeholders:
+  - name: title
+    shape_id: 0
+  - name: content
+    shape_id: 1
+styles:
+  font: Calibri
+  primary_color: "#00A86B"
+  background_color: "#FFFFFF"
